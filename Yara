@@ -1,0 +1,20 @@
+import "pe" 
+/* 
+  Detects COM technique for deleting volume shadow copies using the
+  Volume Shadow Copy Coordinator. 
+*/ 
+rule VSS_COM_Deletion_Technique_without_WMI 
+{ 
+   strings: 
+      $IID_IVssCoordinator = {D4 41 9F DA 5D 1A D0 41 A6 14 6D FD 78 DF 5D 05} 
+      $CLSID_CVssCoordinator = {5F AB 79 E5 C4 1C B4 44 BE D9 DE 09 91 FF 06 23} 
+      $SeBackupPrivilege = "SeBackupPrivilege" ascii wide fullword 
+   condition: 
+      uint32(uint32(0x3C)) == 0x00004550 and  
+      $IID_IVssCoordinator and 
+      $CLSID_CVssCoordinator and 
+      $SeBackupPrivilege and 
+      not for all i in (0..pe.number_of_signatures - 1): 
+         pe.signatures[i].valid_on(pe.timestamp) 
+      )  
+}
